@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import glm "core:math/linalg/glsl"
 import sdl "vendor:sdl3"
 import gl "vendor:OpenGL"
 import "imdd"
@@ -90,12 +91,15 @@ main :: proc() {
 
     imdd.debug_init(WINDOW_WIDTH, WINDOW_HEIGHT); defer imdd.debug_free()
 
-    mesh: imdd.Debug_Mesh;
-
-    imdd.debug_mesh_box2(&mesh, {-192, 96, 0}, {64, 128, 0}, 0xaa0000)
-    imdd.debug_mesh_box2(&mesh, {-192, -32, 0}, {128, 64, 0}, 0x0000aa)
-
-    imdd.build_debug_mesh(&mesh); defer imdd.destroy_debug_mesh(&mesh)
+    hull: Hull; defer hull_delete(hull)
+    hull_add_vertex(&hull, {-32, -32, 0})
+    hull_add_vertex(&hull, {32, -32, 0})
+    hull_add_vertex(&hull, {32, 32, 0})
+    hull_add_vertex(&hull, {-32, 32, 0})
+    hull_compute_info(&hull)
+    hull_scale(&hull, {2, 2, 2})
+    hull_rotate_z(&hull, glm.radians_f32(45))
+    hull_translate(&hull, {128, 128, 0})
 
     loop: for {
         time = sdl.GetTicks()
@@ -167,21 +171,25 @@ main :: proc() {
         imdd.debug_grid_xy({0, 0, -1}, {16384, 16384}, {32, 32}, 1, 0xffffff)
         imdd.debug_grid_xy({0, 0, 0}, {16384, 16384}, {256, 256}, 2, 0xffffff)
 
-        imdd.debug_arrow({0, 0, 0}, {128, 0, 0}, 4, 0xff0000)
-        imdd.debug_arrow({0, 0, 0}, {0, 128, 0}, 4, 0x00ff00)
+        imdd.debug_arrow({0, 0, 0}, {64, 0, 0}, 4, 0xff0000)
+        imdd.debug_arrow({0, 0, 0}, {0, 64, 0}, 4, 0x00ff00)
 
-        imdd.debug_line({192, 128, 0}, {160, 183, 0}, 2, 0x00ffff);
-        imdd.debug_line({160, 183, 0}, {96, 183, 0}, 2, 0x00ffff);
-        imdd.debug_line({96, 183, 0}, {64, 128, 0}, 2, 0x00ffff);
-        imdd.debug_line({64, 128, 0}, {96, 73, 0}, 2, 0x00ffff);
-        imdd.debug_line({96, 73, 0}, {160, 73, 0}, 2, 0x00ffff);
-        imdd.debug_line({160, 73, 0}, {192, 128, 0}, 2, 0x00ffff);
+        for i in 0 ..< len(hull.vertices) {
+            curr := hull.vertices[i]
+            next := hull.vertices[(i + 1) % len(hull.vertices)]
 
-        imdd.debug_point({32, 32, 0}, 4, 0x8a7be3)
-        imdd.debug_mesh(&mesh)
+            imdd.debug_line(curr, next, 2, 0x00ffff);
+        }
 
-        imdd.debug_text("Hello, World!", {0, 256, 1}, 64, 0xff0000)
-        imdd.debug_text("TEST", {0, 256 + 64, 1}, 64, 0x0000ff)
+        radius: f32 = 32
+
+        test := gjk(hull, camera.position, radius, {1, 0, 0})
+
+        if test {
+            imdd.debug_point(camera.position, radius, 0xff0000)
+        } else {
+            imdd.debug_point(camera.position, radius, 0xaaaaaa)
+        }
 
         imdd.debug_prepare(
             i32(camera.mode),
