@@ -1,5 +1,6 @@
 package main
 
+import "core:math/rand"
 import "core:fmt"
 import glm "core:math/linalg/glsl"
 import sdl "vendor:sdl3"
@@ -80,7 +81,8 @@ main :: proc() {
     time_last := time
 
     orthographic_camera: Camera; init_orthographic_camera(&orthographic_camera)
-    camera := &orthographic_camera
+    perspective_camera: Camera; init_perspective_camera(&perspective_camera)
+    camera := &perspective_camera
     movement_speed: f32 = 256
     yaw_speed: f32 = 0.002
     pitch_speed: f32 = 0.002
@@ -92,14 +94,27 @@ main :: proc() {
     imdd.debug_init(WINDOW_WIDTH, WINDOW_HEIGHT); defer imdd.debug_free()
 
     hull: Hull; defer hull_delete(hull)
-    hull_add_vertex(&hull, {-32, -32, 0})
-    hull_add_vertex(&hull, {32, -32, 0})
-    hull_add_vertex(&hull, {32, 32, 0})
-    hull_add_vertex(&hull, {-32, 32, 0})
-    hull_compute_info(&hull)
-    hull_scale(&hull, {2, 2, 2})
-    hull_rotate_z(&hull, glm.radians_f32(45))
-    hull_translate(&hull, {128, 128, 0})
+    hull_gen_cube(&hull, {}, {64, 64, 64})
+    hull_rotate_z(&hull, glm.radians_f32(30))
+
+    debug_mesh: imdd.Debug_Mesh;
+
+    for &face in hull.faces {
+        index := len(debug_mesh.vertices)
+        r := rand.float32() * 255; g := rand.float32() * 255; b := rand.float32() * 255
+
+        for index in face.indices {
+            vertex := hull.vertices[index]
+
+            append(&debug_mesh.vertices, imdd.Debug_Mesh_Vertex{vertex, face.normal, imdd.rgb_f32(r, g, b)})
+        }
+
+        for i := 0; i < len(face.indices) - 2; i += 1 {
+            append(&debug_mesh.triangles, imdd.Debug_Mesh_Triangle{u32(index), u32(index + i + 1), u32(index + i + 2)})
+        }
+    }
+
+    imdd.build_debug_mesh(&debug_mesh); defer imdd.destroy_debug_mesh(&debug_mesh)
 
     loop: for {
         time = sdl.GetTicks()
@@ -168,28 +183,22 @@ main :: proc() {
         compute_camera_projection(camera, f32(viewport_x), f32(viewport_y))
         compute_camera_view(camera)
 
-        imdd.debug_grid_xy({0, 0, -1}, {16384, 16384}, {32, 32}, 1, 0xffffff)
-        imdd.debug_grid_xy({0, 0, 0}, {16384, 16384}, {256, 256}, 2, 0xffffff)
+        imdd.debug_grid_xz({0, 0, 0}, {16384, 16384}, {32, 32}, 1, 0xffffff)
 
         imdd.debug_arrow({0, 0, 0}, {64, 0, 0}, 4, 0xff0000)
         imdd.debug_arrow({0, 0, 0}, {0, 64, 0}, 4, 0x00ff00)
 
-        for i in 0 ..< len(hull.vertices) {
-            curr := hull.vertices[i]
-            next := hull.vertices[(i + 1) % len(hull.vertices)]
-
-            imdd.debug_line(curr, next, 2, 0x00ffff);
-        }
-
-        radius: f32 = 32
-
-        test := gjk(hull, camera.position, radius, {1, 0, 0})
+        position := camera.position + camera.forward * 64
+        radius: f32 = 8
+        test := gjk(hull, position, radius, {1, 0, 0})
 
         if test {
-            imdd.debug_point(camera.position, radius, 0xff0000)
+            imdd.debug_sphere(position, radius, 0xff0000)
         } else {
-            imdd.debug_point(camera.position, radius, 0xaaaaaa)
+            imdd.debug_sphere(position, radius, 0xaaaaaa)
         }
+
+        imdd.debug_mesh(&debug_mesh)
 
         imdd.debug_prepare(
             i32(camera.mode),
