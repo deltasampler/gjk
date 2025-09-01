@@ -6,6 +6,7 @@ import glm "core:math/linalg/glsl"
 import sdl "vendor:sdl3"
 import gl "vendor:OpenGL"
 import "imdd"
+import c "collision"
 
 WINDOW_TITLE :: "GJK"
 WINDOW_WIDTH :: 960
@@ -93,9 +94,16 @@ main :: proc() {
 
     imdd.debug_init(WINDOW_WIDTH, WINDOW_HEIGHT); defer imdd.debug_free()
 
-    hull: Hull; defer hull_delete(hull)
-    hull_gen_cube(&hull, {}, {64, 64, 64})
-    hull_rotate_z(&hull, glm.radians_f32(30))
+    hull: c.Hull; defer c.hull_delete(hull)
+    c.hull_gen_cube(&hull, {}, {64, 64, 64})
+    c.hull_rotate_z(&hull, glm.radians_f32(30))
+
+    collider0: c.Collider
+    c.collider_sphere(&collider0, {}, 0)
+
+    collider1: c.Collider
+    c.collider_hull(&collider1, hull.center, {}, {}, hull.vertices[:])
+    defer c.delete_collider(collider1)
 
     debug_mesh: imdd.Debug_Mesh;
 
@@ -188,14 +196,15 @@ main :: proc() {
         imdd.debug_arrow({0, 0, 0}, {64, 0, 0}, 4, 0xff0000)
         imdd.debug_arrow({0, 0, 0}, {0, 64, 0}, 4, 0x00ff00)
 
-        position := camera.position + camera.forward * 64
-        radius: f32 = 8
-        test := gjk(hull, position, radius, {1, 0, 0})
+        collider0.position = camera.position + camera.forward * 64
+        collider0.radius = 8
+
+        test := c.gjk(collider0, collider1)
 
         if test {
-            imdd.debug_sphere(position, radius, 0xff0000)
+            imdd.debug_sphere(collider0.position, collider0.radius, 0xff0000)
         } else {
-            imdd.debug_sphere(position, radius, 0xaaaaaa)
+            imdd.debug_sphere(collider0.position, collider0.radius, 0xaaaaaa)
         }
 
         imdd.debug_mesh(&debug_mesh)
