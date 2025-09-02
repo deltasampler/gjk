@@ -57,20 +57,6 @@ delete_collider :: proc(collider: Collider) {
     delete(collider.vertices)
 }
 
-calc_hull_extent :: proc(vertices: []glm.vec3) -> glm.vec3 {
-    min := vertices[0]
-    max := vertices[0]
-
-    for i in 1 ..< len(vertices) {
-        vertex := vertices[i]
-
-        min = glm.min(min, vertex)
-        max = glm.max(max, vertex)
-    }
-
-    return glm.abs(max - min) / 2
-}
-
 support :: proc(collider: Collider, dir: glm.vec3) -> glm.vec3 {
     dir := glm.normalize(dir)
     result: glm.vec3

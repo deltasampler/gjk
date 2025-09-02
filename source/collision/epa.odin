@@ -14,10 +14,6 @@ Collision_Info :: struct {
     depth: glm.vec3,
 }
 
-calc_normal :: proc(a: glm.vec3, b: glm.vec3, c: glm.vec3) -> glm.vec3 {
-    return glm.normalize(glm.cross(b - a, c - a))
-}
-
 epa :: proc(collider0: Collider, collider1: Collider, simplex: Simplex) -> (info: Collision_Info) {
     a := simplex.points[3]
     b := simplex.points[2]
