@@ -57,6 +57,14 @@ delete_collider :: proc(collider: Collider) {
     delete(collider.vertices)
 }
 
+calc_collider_bounds :: proc(collider: ^Collider) -> (glm.vec3, glm.vec3) {
+    return collider.position - collider.extent, collider.position + collider.extent
+}
+
+calc_collider_radius :: proc(collider: ^Collider) -> f32 {
+    return glm.max(glm.max(collider.extent.x, collider.extent.y), collider.extent.z)
+}
+
 support :: proc(collider: Collider, dir: glm.vec3) -> glm.vec3 {
     dir := glm.normalize(dir)
     result: glm.vec3
