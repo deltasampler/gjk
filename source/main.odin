@@ -94,16 +94,20 @@ main :: proc() {
 
     imdd.debug_init(WINDOW_WIDTH, WINDOW_HEIGHT); defer imdd.debug_free()
 
+    test_collider: c.Collider
+    c.make_collider_box(&test_collider, {}, {8, 8, 8})
+
+    colliders: [5]c.Collider
+    c.make_collider_box(&colliders[0], {-256, 0, 0}, {32, 32, 32})
+    c.make_collider_sphere(&colliders[1], {-128, 0, 0}, 32)
+
     hull: c.Hull; defer c.hull_delete(hull)
     c.hull_gen_cube(&hull, {}, {64, 64, 64})
     c.hull_rotate_z(&hull, glm.radians_f32(30))
+    c.make_collider_hull(&colliders[2], {}, hull.vertices[:]); defer c.delete_collider(colliders[4])
 
-    collider0: c.Collider
-    c.collider_sphere(&collider0, {}, 0)
-
-    collider1: c.Collider
-    c.collider_hull(&collider1, hull.center, {}, {}, hull.vertices[:])
-    defer c.delete_collider(collider1)
+    c.make_collider_capsule(&colliders[3], {128, 0, 0}, 32, 32)
+    c.make_collider_cylinder(&colliders[4], {256, 0, 0}, 32, 32)
 
     debug_mesh: imdd.Debug_Mesh;
 
@@ -193,21 +197,36 @@ main :: proc() {
 
         imdd.debug_grid_xz({0, 0, 0}, {16384, 16384}, {32, 32}, 1, 0xffffff)
 
-        imdd.debug_arrow({0, 0, 0}, {64, 0, 0}, 4, 0xff0000)
-        imdd.debug_arrow({0, 0, 0}, {0, 64, 0}, 4, 0x00ff00)
-
-        collider0.position = camera.position + camera.forward * 64
-        collider0.radius = 8
-
-        test := c.gjk_epa(collider0, collider1)
-
-        if test.intersects {
-            imdd.debug_sphere(collider0.position + test.normal * test.depth, collider0.radius, 0xff0000)
-        } else {
-            imdd.debug_sphere(collider0.position, collider0.radius, 0xaaaaaa)
+        for &collider in colliders {
+            #partial switch(collider.type) {
+            case .BOX:
+                imdd.debug_aabb(collider.position, collider.extent * 2, 0xff9900)
+            case .SPHERE:
+                imdd.debug_sphere(collider.position, collider.extent.x, 0xd9ff00)
+            case .CAPSULE:
+                imdd.debug_cylinder_aa(collider.position, {collider.extent.x, collider.extent.y * 2}, 0x00ff77)
+                imdd.debug_sphere(collider.position - {0, collider.extent.y, 0}, collider.extent.x, 0x00ff77)
+                imdd.debug_sphere(collider.position + {0, collider.extent.y, 0}, collider.extent.x, 0x00ff77)
+            case .CYLINDER:
+                imdd.debug_cylinder_aa(collider.position, {collider.extent.x, collider.extent.y * 2}, 0xff00e6)
+            }
         }
 
         imdd.debug_mesh(&debug_mesh)
+
+        test_collider.position = camera.position + camera.forward * 64
+
+        imdd.debug_aabb(test_collider.position, test_collider.extent * 2, 0xaaaaaa)
+
+        for &collider in colliders {
+            test := c.gjk_epa(test_collider, collider)
+
+            if test.intersects {
+                imdd.debug_aabb(test_collider.position + test.normal * test.depth, test_collider.extent * 2, 0xff0000)
+
+                break
+            }
+        }
 
         imdd.debug_prepare(
             i32(camera.mode),
