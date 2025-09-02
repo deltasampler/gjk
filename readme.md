@@ -1,11 +1,10 @@
 # GJK
-In this project I attempt to implement GJK collision detection algorithm
+In this project I attempt to implement GJK and EPA collision detection algorithms
 
 If you don't have Odin setup, then check [Odin Setup](#odin-setup) section.
 
 If you want to setup Odin Language Server (OLS), then check [OLS Setup](#ols-setup) section.
 
-If you want SDL2 instead, check [Odin SDL2 Template](https://github.com/deltasampler/odin_sdl2_template)
 ## Table of Contents
 - [Requirements](#requirements)
   - [Windows](#windows)
