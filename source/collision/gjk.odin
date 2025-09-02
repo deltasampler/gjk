@@ -28,7 +28,7 @@ case_simplex2 :: proc(state: ^GJK_State) {
         state.simplex.points[0] = vec_a
         state.simplex.len = 1
 
-        dir := vec_ao
+        state.dir = vec_ao
     }
 }
 
@@ -121,8 +121,6 @@ case_simplex4 :: proc(state: ^GJK_State) {
     vec_acd := glm.cross(vec_ac, vec_ad)
 
     if is_same_dir(vec_acd, vec_ao) {
-        state.simplex.points[0] = vec_d
-        state.simplex.points[1] = vec_c
         state.simplex.points[2] = vec_a
         state.simplex.len = 3
 
