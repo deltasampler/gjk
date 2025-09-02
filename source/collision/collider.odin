@@ -3,40 +3,53 @@ package collision
 import glm "core:math/linalg/glsl"
 
 Collider_Type :: enum {
-    SPHERE,
     BOX,
+    SPHERE,
+    CAPSULE,
+    CYLINDER,
     HULL,
 }
 
 Collider :: struct {
     type: Collider_Type,
+
+    // transform
     position: glm.vec3,
-    radius: f32,
-    min: glm.vec3,
-    max: glm.vec3,
+    rotation: glm.quat,
+
+    // shape
+    extent: glm.vec3,
     vertices: [dynamic]glm.vec3,
 }
 
-collider_sphere :: proc(collider: ^Collider, position: glm.vec3, radius: f32) {
+make_collider_box :: proc(collider: ^Collider, position: glm.vec3, extent: glm.vec3) {
+    collider.type = .BOX
+    collider.position = position
+    collider.extent = extent
+}
+
+make_collider_sphere :: proc(collider: ^Collider, position: glm.vec3, radius: f32) {
     collider.type = .SPHERE
     collider.position = position
-    collider.radius = radius
-    collider.min = position - radius
-    collider.max = position + radius
+    collider.extent = radius
 }
 
-collider_box :: proc(collider: ^Collider, min: glm.vec3, max: glm.vec3) {
-    collider.type = .BOX
-    collider.position = (min + max) / 2
-    collider.min = min
-    collider.max = max
+make_collider_capsule :: proc(collider: ^Collider, position: glm.vec3, radius: f32, extent: f32) {
+    collider.type = .CAPSULE
+    collider.position = position
+    collider.extent = {radius, extent, radius}
 }
 
-collider_hull :: proc(collider: ^Collider, position: glm.vec3, min: glm.vec3, max: glm.vec3, vertices: []glm.vec3) {
+make_collider_cylinder :: proc(collider: ^Collider, position: glm.vec3, radius: f32, extent: f32) {
+    collider.type = .CYLINDER
+    collider.position = position
+    collider.extent = {radius, extent, radius}
+}
+
+make_collider_hull :: proc(collider: ^Collider, position: glm.vec3, vertices: []glm.vec3) {
     collider.type = .HULL
     collider.position = position
-    collider.min = min
-    collider.max = max
+    collider.extent = calc_hull_extent(vertices)
     append(&collider.vertices, ..vertices)
 }
 
@@ -44,18 +57,39 @@ delete_collider :: proc(collider: Collider) {
     delete(collider.vertices)
 }
 
+calc_hull_extent :: proc(vertices: []glm.vec3) -> glm.vec3 {
+    min := vertices[0]
+    max := vertices[0]
+
+    for i in 1 ..< len(vertices) {
+        vertex := vertices[i]
+
+        min = glm.min(min, vertex)
+        max = glm.max(max, vertex)
+    }
+
+    return glm.abs(max - min) / 2
+}
+
 support :: proc(collider: Collider, dir: glm.vec3) -> glm.vec3 {
     dir := glm.normalize(dir)
+    result: glm.vec3
 
     switch collider.type {
-    case .SPHERE:
-        return collider.position + dir * collider.radius
     case .BOX:
-        return {
-            dir.x < 0 ? collider.min.x : collider.max.x,
-            dir.y < 0 ? collider.min.y : collider.max.y,
-            dir.z < 0 ? collider.min.z : collider.max.z
+        result = {
+            dir.x < 0 ? -collider.extent.x : collider.extent.x,
+            dir.y < 0 ? -collider.extent.y : collider.extent.y,
+            dir.z < 0 ? -collider.extent.z : collider.extent.z
         }
+    case .SPHERE:
+        result = dir * collider.extent.x
+    case .CAPSULE:
+        result = dir * collider.extent.x
+        result.y += dir.y > 0 ? collider.extent.y : -collider.extent.y
+    case .CYLINDER:
+        result = glm.normalize(glm.vec3{dir.x, 0, dir.z}) * collider.extent.x
+        result.y = dir.y > 0 ? collider.extent.y : -collider.extent.y
     case .HULL:
         vertex_max := collider.vertices[0]
         dot_max := glm.dot(vertex_max, dir)
@@ -70,8 +104,8 @@ support :: proc(collider: Collider, dir: glm.vec3) -> glm.vec3 {
             }
         }
 
-        return vertex_max
+        result = vertex_max
     }
 
-    return {}
+    return glm.quatMulVec3(collider.rotation, result) + collider.position
 }
