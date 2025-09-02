@@ -199,10 +199,10 @@ main :: proc() {
         collider0.position = camera.position + camera.forward * 64
         collider0.radius = 8
 
-        test := c.gjk(collider0, collider1)
+        test := c.gjk_epa(collider0, collider1)
 
-        if test {
-            imdd.debug_sphere(collider0.position, collider0.radius, 0xff0000)
+        if test.intersects {
+            imdd.debug_sphere(collider0.position + test.normal * test.depth, collider0.radius, 0xff0000)
         } else {
             imdd.debug_sphere(collider0.position, collider0.radius, 0xaaaaaa)
         }
