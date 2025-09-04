@@ -11,10 +11,6 @@ GJK_State :: struct {
     simplex: Simplex,
 }
 
-is_same_dir :: proc(a: glm.vec3, b: glm.vec3) -> bool {
-    return glm.dot(a, b) > 0
-}
-
 case_simplex2 :: proc(state: ^GJK_State, point: glm.vec3) {
     vec_a := simplex_get(state.simplex, 1)
     vec_b := simplex_get(state.simplex, 0)

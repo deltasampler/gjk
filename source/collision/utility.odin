@@ -2,6 +2,10 @@ package collision
 
 import glm "core:math/linalg/glsl"
 
+is_same_dir :: proc(a: glm.vec3, b: glm.vec3) -> bool {
+    return glm.dot(a, b) > 0
+}
+
 calc_normal :: proc(a: glm.vec3, b: glm.vec3, c: glm.vec3) -> glm.vec3 {
     return glm.normalize(glm.cross(b - a, c - a))
 }
