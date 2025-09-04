@@ -135,3 +135,37 @@ epa :: proc(collider0: Collider, collider1: Collider, simplex: Simplex) -> (info
 
     return
 }
+
+gjk_epa :: proc(collider0: Collider, collider1: Collider) -> Collision_Info {
+    dir := collider1.position - collider0.position
+    point := support(collider1, dir) - support(collider0, -dir)
+
+    state: GJK_State
+    state.dir = -point
+    simplex_push(&state.simplex, point)
+
+    for i in 0 ..< GJK_ITER_LIMIT {
+        point = support(collider1, state.dir) - support(collider0, -state.dir)
+
+        if !is_same_dir(point, state.dir) {
+            return {}
+        }
+
+        simplex_push(&state.simplex, point)
+
+        switch state.simplex.len {
+        case 2:
+            case_simplex2(&state, {})
+        case 3:
+            case_simplex3(&state, {})
+        case 4:
+            case_simplex4(&state, {})
+        }
+
+        if state.contains_origin {
+            return epa(collider0, collider1, state.simplex)
+        }
+    }
+
+    return {}
+}

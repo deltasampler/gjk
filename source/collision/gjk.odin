@@ -15,12 +15,12 @@ is_same_dir :: proc(a: glm.vec3, b: glm.vec3) -> bool {
     return glm.dot(a, b) > 0
 }
 
-case_simplex2 :: proc(state: ^GJK_State) {
+case_simplex2 :: proc(state: ^GJK_State, point: glm.vec3) {
     vec_a := simplex_get(state.simplex, 1)
     vec_b := simplex_get(state.simplex, 0)
 
     vec_ab := vec_b - vec_a
-    vec_ao := -vec_a
+    vec_ao := point - vec_a
 
     if is_same_dir(vec_ab, vec_ao) {
         state.dir = glm.cross(glm.cross(vec_ab, vec_ao), vec_ab)
@@ -32,14 +32,14 @@ case_simplex2 :: proc(state: ^GJK_State) {
     }
 }
 
-case_simplex3 :: proc(state: ^GJK_State) {
+case_simplex3 :: proc(state: ^GJK_State, point: glm.vec3) {
     vec_a := simplex_get(state.simplex, 2)
     vec_b := simplex_get(state.simplex, 1)
     vec_c := simplex_get(state.simplex, 0)
 
     vec_ab := vec_b - vec_a
     vec_ac := vec_c - vec_a
-    vec_ao := -vec_a
+    vec_ao := point - vec_a
 
     vec_abc := glm.cross(vec_ab, vec_ac)
     vec_abc_ac := glm.cross(vec_abc, vec_ac)
@@ -94,7 +94,7 @@ case_simplex3 :: proc(state: ^GJK_State) {
     }
 }
 
-case_simplex4 :: proc(state: ^GJK_State) {
+case_simplex4 :: proc(state: ^GJK_State, point: glm.vec3) {
     vec_a := simplex_get(state.simplex, 3)
     vec_b := simplex_get(state.simplex, 2)
     vec_c := simplex_get(state.simplex, 1)
@@ -102,7 +102,7 @@ case_simplex4 :: proc(state: ^GJK_State) {
 
     vec_ab := vec_b - vec_a
     vec_ac := vec_c - vec_a
-    vec_ao := -vec_a
+    vec_ao := point - vec_a
 
     vec_abc := glm.cross(vec_ab, vec_ac)
 
@@ -164,11 +164,11 @@ gjk :: proc(collider0: Collider, collider1: Collider) -> bool {
 
         switch state.simplex.len {
         case 2:
-            case_simplex2(&state)
+            case_simplex2(&state, {})
         case 3:
-            case_simplex3(&state)
+            case_simplex3(&state, {})
         case 4:
-            case_simplex4(&state)
+            case_simplex4(&state, {})
         }
 
         if state.contains_origin {
@@ -177,38 +177,4 @@ gjk :: proc(collider0: Collider, collider1: Collider) -> bool {
     }
 
     return false
-}
-
-gjk_epa :: proc(collider0: Collider, collider1: Collider) -> Collision_Info {
-    dir := collider1.position - collider0.position
-    point := support(collider1, dir) - support(collider0, -dir)
-
-    state: GJK_State
-    state.dir = -point
-    simplex_push(&state.simplex, point)
-
-    for i in 0 ..< GJK_ITER_LIMIT {
-        point = support(collider1, state.dir) - support(collider0, -state.dir)
-
-        if !is_same_dir(point, state.dir) {
-            return {}
-        }
-
-        simplex_push(&state.simplex, point)
-
-        switch state.simplex.len {
-        case 2:
-            case_simplex2(&state)
-        case 3:
-            case_simplex3(&state)
-        case 4:
-            case_simplex4(&state)
-        }
-
-        if state.contains_origin {
-            return epa(collider0, collider1, state.simplex)
-        }
-    }
-
-    return {}
 }
