@@ -155,11 +155,11 @@ gjk_epa :: proc(collider0: Collider, collider1: Collider) -> Collision_Info {
 
         switch state.simplex.len {
         case 2:
-            case_simplex2(&state, {})
+            gjk_simplex2(&state)
         case 3:
-            case_simplex3(&state, {})
+            gjk_simplex3(&state)
         case 4:
-            case_simplex4(&state, {})
+            gjk_simplex4(&state)
         }
 
         if state.contains_origin {

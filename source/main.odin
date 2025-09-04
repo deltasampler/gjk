@@ -228,6 +228,30 @@ main :: proc() {
             }
         }
 
+        // vec_a := glm.vec3{64, 0, 0}
+        // vec_b := glm.vec3{-32, 0, 55.4256}
+        // vec_c := glm.vec3{-32, 0, -55.4256}
+        // vec_d := glm.vec3{0, 64, 0}
+        // point := camera.position + camera.forward * 64
+
+        // imdd.debug_point(point, 2, 0xff0000)
+
+        // imdd.debug_line(vec_a, vec_b, 2, 0xaaaaaa)
+        // imdd.debug_point(c.project_point_on_line(vec_a, vec_b, point), 2, 0xff0000)
+
+        // imdd.debug_line(vec_a, vec_b, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_b, vec_c, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_c, vec_a, 2, 0xaaaaaa)
+        // imdd.debug_point(c.project_point_on_triangle(vec_a, vec_b, vec_c, point, true), 2, 0xff0000)
+
+        // imdd.debug_line(vec_a, vec_b, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_b, vec_c, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_c, vec_a, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_d, vec_a, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_d, vec_b, 2, 0xaaaaaa)
+        // imdd.debug_line(vec_d, vec_c, 2, 0xaaaaaa)
+        // imdd.debug_point(c.project_point_on_tetrahedron(vec_a, vec_b, vec_c, vec_d, point), 2, 0xff0000)
+
         imdd.debug_prepare(
             i32(camera.mode),
             camera.position,

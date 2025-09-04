@@ -11,12 +11,12 @@ GJK_State :: struct {
     simplex: Simplex,
 }
 
-case_simplex2 :: proc(state: ^GJK_State, point: glm.vec3) {
+gjk_simplex2 :: proc(state: ^GJK_State) {
     vec_a := simplex_get(state.simplex, 1)
     vec_b := simplex_get(state.simplex, 0)
 
     vec_ab := vec_b - vec_a
-    vec_ao := point - vec_a
+    vec_ao := -vec_a
 
     if is_same_dir(vec_ab, vec_ao) {
         state.dir = glm.cross(glm.cross(vec_ab, vec_ao), vec_ab)
@@ -28,14 +28,14 @@ case_simplex2 :: proc(state: ^GJK_State, point: glm.vec3) {
     }
 }
 
-case_simplex3 :: proc(state: ^GJK_State, point: glm.vec3) {
+gjk_simplex3 :: proc(state: ^GJK_State) {
     vec_a := simplex_get(state.simplex, 2)
     vec_b := simplex_get(state.simplex, 1)
     vec_c := simplex_get(state.simplex, 0)
 
     vec_ab := vec_b - vec_a
     vec_ac := vec_c - vec_a
-    vec_ao := point - vec_a
+    vec_ao := -vec_a
 
     vec_abc := glm.cross(vec_ab, vec_ac)
     vec_abc_ac := glm.cross(vec_abc, vec_ac)
@@ -90,7 +90,7 @@ case_simplex3 :: proc(state: ^GJK_State, point: glm.vec3) {
     }
 }
 
-case_simplex4 :: proc(state: ^GJK_State, point: glm.vec3) {
+gjk_simplex4 :: proc(state: ^GJK_State) {
     vec_a := simplex_get(state.simplex, 3)
     vec_b := simplex_get(state.simplex, 2)
     vec_c := simplex_get(state.simplex, 1)
@@ -98,7 +98,7 @@ case_simplex4 :: proc(state: ^GJK_State, point: glm.vec3) {
 
     vec_ab := vec_b - vec_a
     vec_ac := vec_c - vec_a
-    vec_ao := point - vec_a
+    vec_ao := -vec_a
 
     vec_abc := glm.cross(vec_ab, vec_ac)
 
@@ -160,11 +160,11 @@ gjk :: proc(collider0: Collider, collider1: Collider) -> bool {
 
         switch state.simplex.len {
         case 2:
-            case_simplex2(&state, {})
+            gjk_simplex2(&state)
         case 3:
-            case_simplex3(&state, {})
+            gjk_simplex3(&state)
         case 4:
-            case_simplex4(&state, {})
+            gjk_simplex4(&state)
         }
 
         if state.contains_origin {
