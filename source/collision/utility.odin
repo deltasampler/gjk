@@ -24,17 +24,17 @@ calc_hull_extent :: proc(vertices: []glm.vec3) -> glm.vec3 {
     return glm.abs(max - min) / 2
 }
 
-project_point_on_line :: proc(vec_a: glm.vec3, vec_b: glm.vec3, point: glm.vec3) -> glm.vec3 {
+project_point_on_line :: proc(vec_a: glm.vec3, vec_b: glm.vec3, point: glm.vec3, clamp: bool = false) -> glm.vec3 {
     vec_ab := vec_b - vec_a
     vec_ao := point - vec_a
 
     t := glm.dot(vec_ao, vec_ab) / glm.dot(vec_ab, vec_ab)
-    t = glm.clamp(t, 0.0, 1.0)
+    t = clamp ? glm.clamp(t, 0, 1) : t
 
     return vec_a + t * vec_ab
 }
 
-project_point_on_triangle :: proc(vec_a: glm.vec3, vec_b: glm.vec3, vec_c: glm.vec3, point: glm.vec3) -> glm.vec3 {
+project_point_on_triangle :: proc(vec_a: glm.vec3, vec_b: glm.vec3, vec_c: glm.vec3, point: glm.vec3, clamp: bool = false) -> glm.vec3 {
     vec_ab := vec_b - vec_a
     vec_ac := vec_c - vec_a
     vec_ao := point - vec_a
@@ -46,24 +46,23 @@ project_point_on_triangle :: proc(vec_a: glm.vec3, vec_b: glm.vec3, vec_c: glm.v
     d21 := glm.dot(vec_ao, vec_ac)
 
     denom := d00 * d11 - d01 * d01
-
-    if denom == 0.0 {
-        return vec_a
-    }
-
     v := (d11 * d20 - d01 * d21) / denom
     w := (d00 * d21 - d01 * d20) / denom
+    u := 1.0 - v - w
 
-    v = glm.clamp(v, 0.0, 1.0)
-    w = glm.clamp(w, 0.0, 1.0)
+    if clamp {
+        v = glm.clamp(v, 0.0, 1.0)
+        w = glm.clamp(w, 0.0, 1.0)
+        u = glm.clamp(u, 0.0, 1.0)
 
-    if v + w > 1.0 {
-        t := 1.0 / (v + w)
-        v *= t
-        w *= t
+        sum := u + v + w
+
+        u /= sum
+        v /= sum
+        w /= sum
     }
 
-    return vec_a + vec_ab * v + vec_ac * w
+    return vec_a * u + vec_b * v + vec_c * w
 }
 
 project_point_on_tetrahedron :: proc(vec_a: glm.vec3, vec_b: glm.vec3, vec_c: glm.vec3, vec_d: glm.vec3, point: glm.vec3) -> glm.vec3 {
@@ -77,7 +76,7 @@ project_point_on_tetrahedron :: proc(vec_a: glm.vec3, vec_b: glm.vec3, vec_c: gl
     dist_min := glm.dot(point - vec_a, point - vec_a)
 
     for face in faces {
-        proj := project_point_on_triangle(face[0], face[1], face[2], point)
+        proj := project_point_on_triangle(face[0], face[1], face[2], point, true)
         delta := point - proj
         dist := glm.dot(delta, delta)
 
